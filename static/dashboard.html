@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weather Dashboard</title>
   <link rel="stylesheet" href="/static/styles.css" />
 
@@ -11,6 +12,13 @@
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
 </head>
 <body>
+  <div class="bg-animation">
+    <canvas id="bg-canvas"></canvas>
+    <div class="bg-gradient-1"></div>
+    <div class="bg-gradient-2"></div>
+    <div class="bg-gradient-3"></div>
+  </div>
+  
   <div class="dashboard">
     <div class="dashboard-inner">
       <header class="header">
@@ -18,17 +26,25 @@
           <h1>Colombo Weather</h1>
           <p>Live conditions and last 24 hours overview</p>
         </div>
-        <div>
+        <div class="status-container">
           <div class="badge">
-            <span class="badge-dot"></span>
+            <span class="badge-dot pulse"></span>
             <span>Pipeline running</span>
           </div>
+          <div class="last-update" id="last-update-time">Updating...</div>
         </div>
       </header>
 
       <section class="cards">
         <div class="card card-accent">
-          <div class="card-label">Latest temperature</div>
+          <div class="card-header">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+              </svg>
+            </div>
+            <div class="card-label">Latest temperature</div>
+          </div>
           <div class="card-value">
             <span id="latest-temp">--</span>
             <span class="card-unit">°C</span>
@@ -37,7 +53,14 @@
         </div>
 
         <div class="card card-wind">
-          <div class="card-label">Latest windspeed</div>
+          <div class="card-header">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+              </svg>
+            </div>
+            <div class="card-label">Latest windspeed</div>
+          </div>
           <div class="card-value">
             <span id="latest-wind">--</span>
             <span class="card-unit">km/h</span>
@@ -45,8 +68,17 @@
           <div class="card-sub" id="latest-wind-time">—</div>
         </div>
 
-        <div class="card">
-          <div class="card-label">Last 24h coverage</div>
+        <div class="card card-data">
+          <div class="card-header">
+            <div class="card-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="9" x2="15" y2="9"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+            </div>
+            <div class="card-label">Last 24h coverage</div>
+          </div>
           <div class="card-value">
             <span id="rows-count">--</span>
           </div>
@@ -85,162 +117,380 @@
           </div>
         </div>
       </section>
+      
+      <footer class="footer">
+        <div class="footer-content">
+          <span>Weather Dashboard</span>
+          <span>Powered by ETL Pipeline</span>
+        </div>
+      </footer>
     </div>
   </div>
 
   <script>
+    // Background animation
+    (function() {
+      const canvas = document.getElementById('bg-canvas');
+      const ctx = canvas.getContext('2d');
+      
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      
+      window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+      });
+      
+      // Particle system
+      class Particle {
+        constructor() {
+          this.reset();
+        }
+        
+        reset() {
+          this.x = Math.random() * canvas.width;
+          this.y = Math.random() * canvas.height;
+          this.size = Math.random() * 2 + 0.5;
+          this.speedX = (Math.random() - 0.5) * 0.3;
+          this.speedY = (Math.random() - 0.5) * 0.3;
+          this.opacity = Math.random() * 0.5 + 0.2;
+          this.pulse = Math.random() * 0.02 + 0.01;
+          this.pulseDirection = 1;
+        }
+        
+        update() {
+          this.x += this.speedX;
+          this.y += this.speedY;
+          
+          // Pulse effect
+          this.opacity += this.pulse * this.pulseDirection;
+          if (this.opacity > 0.7 || this.opacity < 0.2) {
+            this.pulseDirection *= -1;
+          }
+          
+          // Wrap around edges
+          if (this.x < 0) this.x = canvas.width;
+          if (this.x > canvas.width) this.x = 0;
+          if (this.y < 0) this.y = canvas.height;
+          if (this.y > canvas.height) this.y = 0;
+        }
+        
+        draw() {
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(56, 189, 248, ${this.opacity})`;
+          ctx.fill();
+        }
+      }
+      
+      // Connection lines between nearby particles
+      function drawConnections(particles) {
+        for (let i = 0; i < particles.length; i++) {
+          for (let j = i + 1; j < particles.length; j++) {
+            const dx = particles[i].x - particles[j].x;
+            const dy = particles[i].y - particles[j].y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (distance < 150) {
+              ctx.beginPath();
+              ctx.moveTo(particles[i].x, particles[i].y);
+              ctx.lineTo(particles[j].x, particles[j].y);
+              ctx.strokeStyle = `rgba(168, 85, 247, ${0.15 * (1 - distance / 150)})`;
+              ctx.lineWidth = 0.5;
+              ctx.stroke();
+            }
+          }
+        }
+      }
+      
+      // Create particles
+      const particles = [];
+      const particleCount = 50;
+      
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle());
+      }
+      
+      // Animation loop
+      function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Update and draw particles
+        particles.forEach(particle => {
+          particle.update();
+          particle.draw();
+        });
+        
+        // Draw connections
+        drawConnections(particles);
+        
+        requestAnimationFrame(animate);
+      }
+      
+      animate();
+    })();
+    
+    // Set the last update time
+    document.getElementById("last-update-time").innerText = "Last updated: " + new Date().toLocaleTimeString();
+    
     async function loadLatest() {
-      const res = await fetch("/api/weather/latest");
-      const data = await res.json();
-      if (!data) return;
+      try {
+        const res = await fetch("/api/weather/latest");
+        const data = await res.json();
+        if (!data) return;
 
-      const temp = Number(data.temperature);
-      const wind = Number(data.windspeed);
+        const temp = Number(data.temperature);
+        const wind = Number(data.windspeed);
 
-      document.getElementById("latest-temp").innerText =
-        isNaN(temp) ? "--" : temp.toFixed(1);
-      document.getElementById("latest-wind").innerText =
-        isNaN(wind) ? "--" : wind.toFixed(1);
+        // Animate the numbers
+        animateValue("latest-temp", 0, temp, 1000, 1);
+        animateValue("latest-wind", 0, wind, 1000, 1);
 
-      if (data.weather_time) {
-        const ts = new Date(data.weather_time);
-        const formatted = ts.toLocaleString();
-        document.getElementById("latest-temp-time").innerText = "As of " + formatted;
-        document.getElementById("latest-wind-time").innerText = "As of " + formatted;
+        if (data.weather_time) {
+          const ts = new Date(data.weather_time);
+          const formatted = ts.toLocaleString();
+          document.getElementById("latest-temp-time").innerText = "As of " + formatted;
+          document.getElementById("latest-wind-time").innerText = "As of " + formatted;
+        }
+        
+        // Update the last update time
+        document.getElementById("last-update-time").innerText = "Last updated: " + new Date().toLocaleTimeString();
+      } catch (error) {
+        console.error("Error loading latest data:", error);
       }
     }
 
     async function loadHistoryChart() {
-      const res = await fetch("/api/weather/history");
-      const data = await res.json();
-      if (!data || !data.length) return;
+      try {
+        const res = await fetch("/api/weather/history");
+        const data = await res.json();
+        if (!data || !data.length) return;
 
-      document.getElementById("rows-count").innerText = data.length;
+        document.getElementById("rows-count").innerText = data.length;
 
-      const labels = data.map(d =>
-        new Date(d.weather_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
-      const temps = data.map(d => Number(d.temperature));
-      const winds = data.map(d => Number(d.windspeed));
+        const labels = data.map(d =>
+          new Date(d.weather_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        );
+        const temps = data.map(d => Number(d.temperature));
+        const winds = data.map(d => Number(d.windspeed));
 
-      const ctx = document.getElementById("tempWindChart").getContext("2d");
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: "Temperature (°C)",
-              data: temps,
-              borderColor: "rgba(56, 189, 248, 1)",
-              backgroundColor: "rgba(56, 189, 248, 0.15)",
-              tension: 0.3,
-              fill: true,
-              pointRadius: 2
-            },
-            {
-              label: "Windspeed (km/h)",
-              data: winds,
-              borderColor: "rgba(168, 85, 247, 1)",
-              backgroundColor: "rgba(168, 85, 247, 0.08)",
-              tension: 0.3,
-              fill: false,
-              pointRadius: 2,
-              yAxisID: "y1"
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          interaction: { mode: "index", intersect: false },
-          scales: {
-            x: {
-              ticks: { color: "#9ca3af", maxRotation: 0, autoSkip: true },
-              grid: { display: false }
-            },
-            y: {
-              position: "left",
-              ticks: { color: "#9ca3af" },
-              grid: { color: "rgba(148, 163, 184, 0.15)" }
-            },
-            y1: {
-              position: "right",
-              ticks: { color: "#a855f7" },
-              grid: { drawOnChartArea: false }
-            }
-          },
-          plugins: {
-            legend: { display: false }
-          }
+        const ctx = document.getElementById("tempWindChart").getContext("2d");
+        
+        // Destroy previous chart if it exists
+        if (window.tempWindChartInstance) {
+          window.tempWindChartInstance.destroy();
         }
-      });
+        
+        window.tempWindChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels: labels,
+            datasets: [
+              {
+                label: "Temperature (°C)",
+                data: temps,
+                borderColor: "rgba(56, 189, 248, 1)",
+                backgroundColor: "rgba(56, 189, 248, 0.15)",
+                tension: 0.4,
+                fill: true,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2
+              },
+              {
+                label: "Windspeed (km/h)",
+                data: winds,
+                borderColor: "rgba(168, 85, 247, 1)",
+                backgroundColor: "rgba(168, 85, 247, 0.08)",
+                tension: 0.4,
+                fill: false,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2,
+                yAxisID: "y1"
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: "index", intersect: false },
+            scales: {
+              x: {
+                ticks: { color: "#9ca3af", maxRotation: 0, autoSkip: true },
+                grid: { display: false }
+              },
+              y: {
+                position: "left",
+                ticks: { color: "#9ca3af" },
+                grid: { color: "rgba(148, 163, 184, 0.15)" }
+              },
+              y1: {
+                position: "right",
+                ticks: { color: "#a855f7" },
+                grid: { drawOnChartArea: false }
+              }
+            },
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                backgroundColor: "rgba(15, 23, 42, 0.8)",
+                titleColor: "#e5e7eb",
+                bodyColor: "#9ca3af",
+                borderColor: "rgba(148, 163, 184, 0.25)",
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8,
+                displayColors: true
+              }
+            },
+            animation: {
+              duration: 1500,
+              easing: "easeInOutQuart"
+            }
+          }
+        });
+      } catch (error) {
+        console.error("Error loading history chart:", error);
+      }
     }
 
     async function loadStatsChart() {
-      const res = await fetch("/api/weather/stats");
-      const data = await res.json();
-      if (!data || !data.length) return;
+      try {
+        const res = await fetch("/api/weather/stats");
+        const data = await res.json();
+        if (!data || !data.length) return;
 
-      const labels = data.map(d =>
-        new Date(d.calculated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      );
-      const minTemps = data.map(d => Number(d.min_temp));
-      const maxTemps = data.map(d => Number(d.max_temp));
-      const avgTemps = data.map(d => Number(d.avg_temp));
+        const labels = data.map(d =>
+          new Date(d.calculated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        );
+        const minTemps = data.map(d => Number(d.min_temp));
+        const maxTemps = data.map(d => Number(d.max_temp));
+        const avgTemps = data.map(d => Number(d.avg_temp));
 
-      const ctx = document.getElementById("statsChart").getContext("2d");
-      new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Min",
-              data: minTemps,
-              borderColor: "rgba(148, 163, 184, 1)",
-              tension: 0.3,
-              pointRadius: 1.5
-            },
-            {
-              label: "Avg",
-              data: avgTemps,
-              borderColor: "rgba(56, 189, 248, 1)",
-              tension: 0.3,
-              pointRadius: 1.5
-            },
-            {
-              label: "Max",
-              data: maxTemps,
-              borderColor: "rgba(248, 113, 113, 1)",
-              tension: 0.3,
-              pointRadius: 1.5
-            }
-          ]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              labels: { color: "#9ca3af", boxWidth: 12, boxHeight: 2 }
-            }
+        const ctx = document.getElementById("statsChart").getContext("2d");
+        
+        // Destroy previous chart if it exists
+        if (window.statsChartInstance) {
+          window.statsChartInstance.destroy();
+        }
+        
+        window.statsChartInstance = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Min",
+                data: minTemps,
+                borderColor: "rgba(148, 163, 184, 1)",
+                backgroundColor: "rgba(148, 163, 184, 0.1)",
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2,
+                fill: true
+              },
+              {
+                label: "Avg",
+                data: avgTemps,
+                borderColor: "rgba(56, 189, 248, 1)",
+                backgroundColor: "rgba(56, 189, 248, 0.1)",
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2,
+                fill: true
+              },
+              {
+                label: "Max",
+                data: maxTemps,
+                borderColor: "rgba(248, 113, 113, 1)",
+                backgroundColor: "rgba(248, 113, 113, 0.1)",
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                borderWidth: 2,
+                fill: true
+              }
+            ]
           },
-          scales: {
-            x: {
-              ticks: { color: "#9ca3af" },
-              grid: { display: false }
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                labels: { color: "#9ca3af", boxWidth: 12, boxHeight: 2 },
+                position: "top"
+              },
+              tooltip: {
+                backgroundColor: "rgba(15, 23, 42, 0.8)",
+                titleColor: "#e5e7eb",
+                bodyColor: "#9ca3af",
+                borderColor: "rgba(148, 163, 184, 0.25)",
+                borderWidth: 1,
+                padding: 10,
+                cornerRadius: 8,
+                displayColors: true
+              }
             },
-            y: {
-              ticks: { color: "#9ca3af" },
-              grid: { color: "rgba(148, 163, 184, 0.12)" }
+            scales: {
+              x: {
+                ticks: { color: "#9ca3af" },
+                grid: { display: false }
+              },
+              y: {
+                ticks: { color: "#9ca3af" },
+                grid: { color: "rgba(148, 163, 184, 0.12)" }
+              }
+            },
+            animation: {
+              duration: 1500,
+              easing: "easeInOutQuart"
             }
           }
+        });
+      } catch (error) {
+        console.error("Error loading stats chart:", error);
+      }
+    }
+    
+    // Function to animate numbers
+    function animateValue(id, start, end, duration, decimals) {
+      const obj = document.getElementById(id);
+      const range = end - start;
+      const minTimer = 50;
+      let stepTime = Math.abs(Math.floor(duration / range));
+      stepTime = Math.max(stepTime, minTimer);
+      const startTime = new Date().getTime();
+      const endTime = startTime + duration;
+      let timer;
+      
+      function run() {
+        const now = new Date().getTime();
+        const remaining = Math.max((endTime - now) / duration, 0);
+        const value = Math.round(end - (remaining * range));
+        obj.innerHTML = value.toFixed(decimals);
+        if (value == end) {
+          clearInterval(timer);
         }
-      });
+      }
+      
+      timer = setInterval(run, stepTime);
+      run();
     }
 
+    // Initial load
     loadLatest();
     loadHistoryChart();
     loadStatsChart();
+    
+    // Auto-refresh every 5 minutes
+    setInterval(() => {
+      loadLatest();
+      loadHistoryChart();
+      loadStatsChart();
+    }, 300000);
   </script>
 </body>
 </html>

@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from flask import send_from_directory
+import os
 
 DB_CONFIG = {
     "dbname": "weather_db",
@@ -65,7 +66,6 @@ def weather_stats():
         """
     )
     rows = cur.fetchall()
-    conn.close()
     return jsonify(rows)
 
 if __name__ == "__main__":
