@@ -37,13 +37,13 @@ def main():
     temps = [r[1] for r in rows]
     winds = [r[2] for r in rows]
 
-    min_temp = min(temps)
-    max_temp = max(temps)
-    avg_temp = sum(temps) / len(temps)
+    min_temp = round(min(temps), 2)
+    max_temp = round(max(temps), 2)
+    avg_temp = round(sum(temps) / len(temps), 2)
 
-    min_wind = min(winds)
-    max_wind = max(winds)
-    avg_wind = sum(winds) / len(winds)
+    min_wind = round(min(winds), 2)
+    max_wind = round(max(winds), 2)
+    avg_wind = round(sum(winds) / len(winds), 2)
 
     print(f"Min temp: {min_temp:.2f}")
     print(f"Max temp: {max_temp:.2f}")
