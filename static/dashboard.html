@@ -4,265 +4,459 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Weather Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link rel="stylesheet" href="/static/styles.css" />
-
-  <!-- Chart.js and (optional) time adapter -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/luxon@3/build/global/luxon.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-luxon@1"></script>
 </head>
 <body>
+
+  <!-- ── Weather background ── -->
   <div class="bg-animation">
     <canvas id="bg-canvas"></canvas>
     <div class="bg-gradient-1"></div>
     <div class="bg-gradient-2"></div>
     <div class="bg-gradient-3"></div>
   </div>
-  
-  <div class="dashboard">
-    <div class="dashboard-inner">
-      <header class="header">
-        <div class="title-block">
-          <h1>Colombo Weather</h1>
-          <p>Live conditions and last 24 hours overview</p>
-        </div>
-        <div class="status-container">
-          <div class="badge">
-            <span class="badge-dot pulse"></span>
-            <span>Pipeline running</span>
-          </div>
-          <div class="last-update" id="last-update-time">Updating...</div>
-        </div>
-      </header>
 
-      <section class="cards">
-        <div class="card card-accent">
-          <div class="card-header">
-            <div class="card-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
-              </svg>
-            </div>
-            <div class="card-label">Latest temperature</div>
+  <div class="dashboard">
+
+    <!-- ── Header ── -->
+    <header class="header">
+      <div class="header-left">
+        <!-- Animated cloud + rain SVG icon -->
+        <div class="header-weather-icon">
+          <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- cloud body -->
+            <ellipse cx="32" cy="28" rx="18" ry="11" fill="rgba(160,210,255,0.18)" stroke="rgba(79,195,247,0.7)" stroke-width="1.5"/>
+            <ellipse cx="22" cy="31" rx="11" ry="8" fill="rgba(130,190,255,0.15)" stroke="rgba(79,195,247,0.5)" stroke-width="1.2"/>
+            <ellipse cx="42" cy="31" rx="10" ry="7" fill="rgba(130,190,255,0.15)" stroke="rgba(79,195,247,0.5)" stroke-width="1.2"/>
+            <!-- rain drops (animated via CSS) -->
+            <line class="rain-drop r1" x1="24" y1="42" x2="22" y2="50" stroke="#4fc3f7" stroke-width="1.8" stroke-linecap="round"/>
+            <line class="rain-drop r2" x1="32" y1="44" x2="30" y2="52" stroke="#4fc3f7" stroke-width="1.8" stroke-linecap="round"/>
+            <line class="rain-drop r3" x1="40" y1="42" x2="38" y2="50" stroke="#4fc3f7" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="title-block">
+          <span class="title-eyebrow">Live Weather · Colombo, LK</span>
+          <h1>Weather Dashboard</h1>
+          <p>Real-time conditions and 24-hour overview</p>
+        </div>
+      </div>
+      <div class="status-container">
+        <div class="badge">
+          <span class="badge-dot pulse"></span>
+          <span>Pipeline running</span>
+        </div>
+        <div class="last-update" id="last-update-time">Updating...</div>
+      </div>
+    </header>
+
+    <!-- ── KPI Cards ── -->
+    <section class="cards">
+
+      <!-- Temperature -->
+      <div class="card card-accent">
+        <div class="card-icon-side">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"/>
+            </svg>
           </div>
+        </div>
+        <div class="card-body">
+          <div class="card-label">Temperature</div>
           <div class="card-value">
-            <span id="latest-temp">--</span>
-            <span class="card-unit">°C</span>
+            <span id="latest-temp">--</span><span class="card-unit">°C</span>
           </div>
           <div class="card-sub" id="latest-temp-time">—</div>
         </div>
+      </div>
 
-        <div class="card card-wind">
-          <div class="card-header">
-            <div class="card-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
-              </svg>
-            </div>
-            <div class="card-label">Latest windspeed</div>
+      <!-- Wind -->
+      <div class="card card-wind">
+        <div class="card-icon-side">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/>
+            </svg>
           </div>
+        </div>
+        <div class="card-body">
+          <div class="card-label">Wind Speed</div>
           <div class="card-value">
-            <span id="latest-wind">--</span>
-            <span class="card-unit">km/h</span>
+            <span id="latest-wind">--</span><span class="card-unit">km/h</span>
           </div>
           <div class="card-sub" id="latest-wind-time">—</div>
         </div>
+      </div>
 
-        <div class="card card-data">
-          <div class="card-header">
-            <div class="card-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <line x1="9" y1="9" x2="15" y2="9"></line>
-                <line x1="9" y1="15" x2="15" y2="15"></line>
-              </svg>
-            </div>
-            <div class="card-label">Last 24h coverage</div>
+      <!-- Records -->
+      <div class="card card-data">
+        <div class="card-icon-side">
+          <div class="card-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
+              fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+            </svg>
           </div>
+        </div>
+        <div class="card-body">
+          <div class="card-label">24h Coverage</div>
           <div class="card-value">
             <span id="rows-count">--</span>
           </div>
           <div class="card-sub" id="rows-desc">Records in the Database</div>
         </div>
-      </section>
+      </div>
 
-      <section class="charts">
-        <div class="chart-card">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Temperature & wind (24h)</div>
-              <div class="chart-subtitle">Dual-series time line</div>
-            </div>
-            <div class="legend-row">
-              <span class="legend-dot" style="background: rgba(56,189,248,1);"></span>
-              <span>Temperature</span>
-              <span class="legend-dot" style="background: rgba(168,85,247,1); margin-left:10px;"></span>
-              <span>Windspeed</span>
-            </div>
-          </div>
-          <div class="chart-wrapper">
-            <canvas id="tempWindChart"></canvas>
-          </div>
-        </div>
+    </section>
 
-        <div class="chart-card">
-          <div class="chart-header">
-            <div>
-              <div class="chart-title">Recent stats snapshots</div>
-              <div class="chart-subtitle">Min / max / avg temperature</div>
-            </div>
+    <!-- ── Charts ── -->
+    <section class="charts">
+
+      <!-- Full-width 24h line chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Temperature &amp; Wind Speed — Last 24 Hours</div>
+            <div class="chart-subtitle">Hourly readings from the ETL pipeline</div>
           </div>
-          <div class="chart-wrapper">
-            <canvas id="statsChart"></canvas>
+          <div class="legend-row">
+            <span class="legend-dot" style="background:#ffb74d;"></span>
+            <span>Temperature</span>
+            <span class="legend-dot" style="background:#4fc3f7; margin-left:10px;"></span>
+            <span>Wind Speed</span>
           </div>
         </div>
-      </section>
-      
-      <footer class="footer">
-        <div class="footer-content">
-          <span>Weather Dashboard</span>
-          <span>Powered by ETL Pipeline</span>
+        <div class="chart-wrapper">
+          <canvas id="tempWindChart"></canvas>
         </div>
-      </footer>
-    </div>
-  </div>
+      </div>
+
+      <!-- Full-width stats band chart -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div>
+            <div class="chart-title">Temperature Range Snapshots</div>
+            <div class="chart-subtitle">Min · Avg · Max over recent stat windows</div>
+          </div>
+          <div class="legend-row">
+            <span class="legend-dot" style="background:#64b5f6;"></span>
+            <span>Min</span>
+            <span class="legend-dot" style="background:#ffa726; margin-left:10px;"></span>
+            <span>Avg</span>
+            <span class="legend-dot" style="background:#ef5350; margin-left:10px;"></span>
+            <span>Max</span>
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="statsChart"></canvas>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── Footer ── -->
+    <footer class="footer">
+      <div class="footer-content">
+        <span>Weather Dashboard · Colombo</span>
+        <span>Powered by ETL Pipeline</span>
+      </div>
+    </footer>
+
+  </div><!-- /.dashboard -->
+
+  <style>
+    /* Rain drop animation on header icon */
+    .rain-drop {
+      animation: rainFall 1.4s ease-in infinite;
+      transform-origin: top center;
+    }
+    .r1 { animation-delay: 0s; }
+    .r2 { animation-delay: 0.45s; }
+    .r3 { animation-delay: 0.9s; }
+    @keyframes rainFall {
+      0%   { opacity: 0; transform: translateY(-4px); }
+      30%  { opacity: 1; }
+      80%  { opacity: 0.6; }
+      100% { opacity: 0; transform: translateY(4px); }
+    }
+  </style>
 
   <script>
-    // Background animation
-    (function() {
+    /* ═══════════════════════════════════════════════════════════════════
+       WEATHER BACKGROUND — rain streaks + drifting clouds
+    ═══════════════════════════════════════════════════════════════════ */
+    (function () {
       const canvas = document.getElementById('bg-canvas');
-      const ctx = canvas.getContext('2d');
-      
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      
-      window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
+      const ctx    = canvas.getContext('2d');
+
+      function resize() {
+        canvas.width  = window.innerWidth;
         canvas.height = window.innerHeight;
-      });
-      
-      // Particle system
-      class Particle {
-        constructor() {
-          this.reset();
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      /* ── Wind gust offset (shared, slowly drifts) ── */
+      let windAngle  = 0.13;   // radians — base slant
+      let windTarget = 0.13;
+      let windTimer  = 0;
+
+      function updateWind() {
+        windTarget = 0.08 + Math.random() * 0.18;
+        windTimer  = setTimeout(updateWind, 3000 + Math.random() * 4000);
+      }
+      updateWind();
+
+      /* ── Rain drops — three depth layers ── */
+      class RainDrop {
+        constructor(layer) {
+          // layer 0 = far/faint, 1 = mid, 2 = near/bright
+          this.layer = layer;
+          this.init(true);
         }
-        
-        reset() {
-          this.x = Math.random() * canvas.width;
-          this.y = Math.random() * canvas.height;
-          this.size = Math.random() * 2 + 0.5;
-          this.speedX = (Math.random() - 0.5) * 0.3;
-          this.speedY = (Math.random() - 0.5) * 0.3;
-          this.opacity = Math.random() * 0.5 + 0.2;
-          this.pulse = Math.random() * 0.02 + 0.01;
-          this.pulseDirection = 1;
+
+        init(scatter) {
+          const w = canvas.width;
+          const h = canvas.height;
+
+          // spread initial positions across full screen height too
+          this.y = scatter
+            ? Math.random() * (h + 200) - 200
+            : -20 - Math.random() * 80;
+
+          // x starts slightly off-screen left to account for slant travel
+          this.x = Math.random() * (w + 200) - 100;
+
+          if (this.layer === 0) {
+            // far — slow, thin, faint, short
+            this.speed   = Math.random() * 3  + 5;
+            this.len     = Math.random() * 10 + 6;
+            this.width   = Math.random() * 0.4 + 0.2;
+            this.opacity = Math.random() * 0.09 + 0.03;
+          } else if (this.layer === 1) {
+            // mid
+            this.speed   = Math.random() * 5  + 10;
+            this.len     = Math.random() * 16 + 10;
+            this.width   = Math.random() * 0.6 + 0.4;
+            this.opacity = Math.random() * 0.14 + 0.06;
+          } else {
+            // near — fast, thick, bright, long
+            this.speed   = Math.random() * 7  + 16;
+            this.len     = Math.random() * 22 + 16;
+            this.width   = Math.random() * 0.8 + 0.7;
+            this.opacity = Math.random() * 0.22 + 0.10;
+          }
+
+          // each drop has a tiny personal angle variation around the wind angle
+          this.angleOffset = (Math.random() - 0.5) * 0.04;
         }
-        
+
         update() {
-          this.x += this.speedX;
-          this.y += this.speedY;
-          
-          // Pulse effect
-          this.opacity += this.pulse * this.pulseDirection;
-          if (this.opacity > 0.7 || this.opacity < 0.2) {
-            this.pulseDirection *= -1;
-          }
-          
-          // Wrap around edges
-          if (this.x < 0) this.x = canvas.width;
-          if (this.x > canvas.width) this.x = 0;
-          if (this.y < 0) this.y = canvas.height;
-          if (this.y > canvas.height) this.y = 0;
+          // smoothly track wind angle
+          windAngle += (windTarget - windAngle) * 0.002;
+          const a = windAngle + this.angleOffset;
+
+          this.y += this.speed;
+          this.x += this.speed * Math.tan(a);
+
+          if (this.y > canvas.height + this.len + 10) this.init(false);
         }
-        
+
         draw() {
+          const a = windAngle + this.angleOffset;
+
+          // tail-to-head gradient: transparent at top, opaque at bottom
+          const x2 = this.x + this.len * Math.sin(a);
+          const y2 = this.y + this.len * Math.cos(a);
+
+          const grad = ctx.createLinearGradient(this.x, this.y, x2, y2);
+          grad.addColorStop(0,   `rgba(140, 210, 255, 0)`);
+          grad.addColorStop(0.4, `rgba(160, 220, 255, ${this.opacity * 0.5})`);
+          grad.addColorStop(1,   `rgba(190, 235, 255, ${this.opacity})`);
+
+          ctx.save();
+          ctx.strokeStyle = grad;
+          ctx.lineWidth   = this.width;
+          ctx.lineCap     = 'round';
           ctx.beginPath();
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(56, 189, 248, ${this.opacity})`;
+          ctx.moveTo(this.x, this.y);
+          ctx.lineTo(x2, y2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      /* ── Splash particles (appear at bottom when drops land) ── */
+      class Splash {
+        constructor(x) {
+          this.x       = x;
+          this.y       = canvas.height - 2;
+          this.vx      = (Math.random() - 0.5) * 2.5;
+          this.vy      = -(Math.random() * 2 + 1);
+          this.life    = 1;
+          this.decay   = Math.random() * 0.08 + 0.06;
+          this.radius  = Math.random() * 1.5 + 0.5;
+        }
+        update() {
+          this.x  += this.vx;
+          this.y  += this.vy;
+          this.vy += 0.12; // gravity
+          this.life -= this.decay;
+        }
+        draw() {
+          ctx.save();
+          ctx.globalAlpha = Math.max(this.life, 0) * 0.5;
+          ctx.fillStyle   = 'rgba(160, 220, 255, 1)';
+          ctx.beginPath();
+          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
           ctx.fill();
+          ctx.restore();
+        }
+        get dead() { return this.life <= 0; }
+      }
+
+      /* ── Cloud puffs ── */
+      class Cloud {
+        constructor() { this.init(true); }
+        init(randomY) {
+          this.x       = -300;
+          this.y       = randomY
+            ? Math.random() * canvas.height * 0.55
+            : Math.random() * canvas.height * 0.55;
+          this.speed   = Math.random() * 0.25 + 0.08;
+          this.scale   = Math.random() * 0.7 + 0.4;
+          this.opacity = Math.random() * 0.07 + 0.03;
+          if (randomY) this.x = Math.random() * canvas.width;
+        }
+        update() {
+          this.x += this.speed;
+          if (this.x > canvas.width + 320) this.init(false);
+        }
+        draw() {
+          ctx.save();
+          ctx.globalAlpha = this.opacity;
+          ctx.translate(this.x, this.y);
+          ctx.scale(this.scale, this.scale);
+          ctx.fillStyle = 'rgba(160, 210, 255, 1)';
+          // draw a simple cloud shape with arcs
+          ctx.beginPath();
+          ctx.arc(0,   0,  60, 0, Math.PI * 2);
+          ctx.arc(70,  10, 50, 0, Math.PI * 2);
+          ctx.arc(-60, 10, 45, 0, Math.PI * 2);
+          ctx.arc(30, -20, 45, 0, Math.PI * 2);
+          ctx.arc(-25,-15, 40, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
         }
       }
-      
-      // Connection lines between nearby particles
-      function drawConnections(particles) {
-        for (let i = 0; i < particles.length; i++) {
-          for (let j = i + 1; j < particles.length; j++) {
-            const dx = particles[i].x - particles[j].x;
-            const dy = particles[i].y - particles[j].y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
-            
-            if (distance < 150) {
-              ctx.beginPath();
-              ctx.moveTo(particles[i].x, particles[i].y);
-              ctx.lineTo(particles[j].x, particles[j].y);
-              ctx.strokeStyle = `rgba(168, 85, 247, ${0.15 * (1 - distance / 150)})`;
-              ctx.lineWidth = 0.5;
-              ctx.stroke();
-            }
-          }
+
+      /* ── Lightning flash (rare) ── */
+      let flashTimer   = 0;
+      let flashOpacity = 0;
+      function scheduleFlash() {
+        flashTimer = setTimeout(() => {
+          flashOpacity = 0.06;
+          setTimeout(() => { flashOpacity = 0; }, 80);
+          setTimeout(() => {
+            flashOpacity = 0.04;
+            setTimeout(() => { flashOpacity = 0; }, 60);
+          }, 120);
+          scheduleFlash();
+        }, Math.random() * 14000 + 8000);
+      }
+      scheduleFlash();
+
+      /* ── Init — three depth layers ── */
+      const farDrops  = Array.from({ length: 120 }, () => new RainDrop(0));
+      const midDrops  = Array.from({ length: 100 }, () => new RainDrop(1));
+      const nearDrops = Array.from({ length: 60  }, () => new RainDrop(2));
+      const clouds    = Array.from({ length: 7   }, () => new Cloud());
+      const splashes  = [];
+
+      // seed some splashes periodically
+      setInterval(() => {
+        const count = Math.floor(Math.random() * 4) + 2;
+        for (let i = 0; i < count; i++) {
+          splashes.push(new Splash(Math.random() * canvas.width));
         }
-      }
-      
-      // Create particles
-      const particles = [];
-      const particleCount = 50;
-      
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle());
-      }
-      
-      // Animation loop
+      }, 120);
+
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // Update and draw particles
-        particles.forEach(particle => {
-          particle.update();
-          particle.draw();
-        });
-        
-        // Draw connections
-        drawConnections(particles);
-        
+
+        // lightning overlay
+        if (flashOpacity > 0) {
+          ctx.fillStyle = `rgba(180, 220, 255, ${flashOpacity})`;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // draw back-to-front for depth
+        clouds.forEach(c => { c.update(); c.draw(); });
+        farDrops.forEach(d  => { d.update(); d.draw(); });
+        midDrops.forEach(d  => { d.update(); d.draw(); });
+        nearDrops.forEach(d => { d.update(); d.draw(); });
+
+        // splashes
+        for (let i = splashes.length - 1; i >= 0; i--) {
+          splashes[i].update();
+          splashes[i].draw();
+          if (splashes[i].dead) splashes.splice(i, 1);
+        }
+
         requestAnimationFrame(animate);
       }
-      
       animate();
     })();
-    
-    // Set the last update time
-    document.getElementById("last-update-time").innerText = "Last updated: " + new Date().toLocaleTimeString();
-    
+
+    /* ═══════════════════════════════════════════════════════════════════
+       TIMESTAMP
+    ═══════════════════════════════════════════════════════════════════ */
+    document.getElementById("last-update-time").innerText =
+      "Last updated: " + new Date().toLocaleTimeString();
+
+    /* ═══════════════════════════════════════════════════════════════════
+       API: LATEST
+    ═══════════════════════════════════════════════════════════════════ */
     async function loadLatest() {
       try {
-        const res = await fetch("/api/weather/latest");
+        const res  = await fetch("/api/weather/latest");
         const data = await res.json();
         if (!data) return;
 
         const temp = Number(data.temperature);
         const wind = Number(data.windspeed);
 
-        // Animate the numbers
         animateValue("latest-temp", 0, temp, 1000, 1);
         animateValue("latest-wind", 0, wind, 1000, 1);
 
         if (data.weather_time) {
-          const ts = new Date(data.weather_time);
-          const formatted = ts.toLocaleString();
+          const formatted = new Date(data.weather_time).toLocaleString();
           document.getElementById("latest-temp-time").innerText = "As of " + formatted;
           document.getElementById("latest-wind-time").innerText = "As of " + formatted;
         }
-        
-        // Update the last update time
-        document.getElementById("last-update-time").innerText = "Last updated: " + new Date().toLocaleTimeString();
+
+        document.getElementById("last-update-time").innerText =
+          "Last updated: " + new Date().toLocaleTimeString();
       } catch (error) {
         console.error("Error loading latest data:", error);
       }
     }
 
+    /* ═══════════════════════════════════════════════════════════════════
+       API: HISTORY CHART
+    ═══════════════════════════════════════════════════════════════════ */
     async function loadHistoryChart() {
       try {
-        const res = await fetch("/api/weather/history");
+        const res  = await fetch("/api/weather/history");
         const data = await res.json();
         if (!data || !data.length) return;
 
@@ -275,38 +469,53 @@
         const winds = data.map(d => Number(d.windspeed));
 
         const ctx = document.getElementById("tempWindChart").getContext("2d");
-        
-        // Destroy previous chart if it exists
-        if (window.tempWindChartInstance) {
-          window.tempWindChartInstance.destroy();
-        }
-        
+        if (window.tempWindChartInstance) window.tempWindChartInstance.destroy();
+
+        // gradient fills
+        const tempGrad = ctx.createLinearGradient(0, 0, 0, 260);
+        tempGrad.addColorStop(0,   "rgba(255, 183, 77, 0.28)");
+        tempGrad.addColorStop(1,   "rgba(255, 183, 77, 0.01)");
+
+        const windGrad = ctx.createLinearGradient(0, 0, 0, 260);
+        windGrad.addColorStop(0,   "rgba(79, 195, 247, 0.22)");
+        windGrad.addColorStop(1,   "rgba(79, 195, 247, 0.01)");
+
         window.tempWindChartInstance = new Chart(ctx, {
           type: "line",
           data: {
-            labels: labels,
+            labels,
             datasets: [
               {
                 label: "Temperature (°C)",
                 data: temps,
-                borderColor: "rgba(56, 189, 248, 1)",
-                backgroundColor: "rgba(56, 189, 248, 0.15)",
-                tension: 0.4,
+                borderColor: "#ffb74d",
+                backgroundColor: tempGrad,
+                tension: 0.45,
                 fill: true,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 2
+                pointRadius: (ctx) => ctx.chart.data.labels.length > 48 ? 2.5 : 4,
+                pointBackgroundColor: "#ffb74d",
+                pointBorderColor: "rgba(6,13,31,0.6)",
+                pointBorderWidth: 1.5,
+                pointHoverRadius: 7,
+                pointHoverBackgroundColor: "#ffe082",
+                pointHoverBorderColor: "#ffb74d",
+                borderWidth: 2.5
               },
               {
                 label: "Windspeed (km/h)",
                 data: winds,
-                borderColor: "rgba(168, 85, 247, 1)",
-                backgroundColor: "rgba(168, 85, 247, 0.08)",
-                tension: 0.4,
-                fill: false,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 2,
+                borderColor: "#4fc3f7",
+                backgroundColor: windGrad,
+                tension: 0.45,
+                fill: true,
+                pointRadius: (ctx) => ctx.chart.data.labels.length > 48 ? 2.5 : 4,
+                pointBackgroundColor: "#4fc3f7",
+                pointBorderColor: "rgba(6,13,31,0.6)",
+                pointBorderWidth: 1.5,
+                pointHoverRadius: 7,
+                pointHoverBackgroundColor: "#b3e5fc",
+                pointHoverBorderColor: "#4fc3f7",
+                borderWidth: 2.5,
                 yAxisID: "y1"
               }
             ]
@@ -317,37 +526,42 @@
             interaction: { mode: "index", intersect: false },
             scales: {
               x: {
-                ticks: { color: "#9ca3af", maxRotation: 0, autoSkip: true },
-                grid: { display: false }
+                ticks: {
+                  color: "rgba(130,175,210,0.55)",
+                  maxRotation: 0,
+                  autoSkip: true,
+                  font: { size: 11 }
+                },
+                grid: { display: false },
+                border: { display: false }
               },
               y: {
                 position: "left",
-                ticks: { color: "#9ca3af" },
-                grid: { color: "rgba(148, 163, 184, 0.15)" }
+                ticks: { color: "rgba(255,183,77,0.65)", font: { size: 11 } },
+                grid: { color: "rgba(79,195,247,0.07)" },
+                border: { display: false }
               },
               y1: {
                 position: "right",
-                ticks: { color: "#a855f7" },
-                grid: { drawOnChartArea: false }
+                ticks: { color: "rgba(79,195,247,0.65)", font: { size: 11 } },
+                grid: { drawOnChartArea: false },
+                border: { display: false }
               }
             },
             plugins: {
               legend: { display: false },
               tooltip: {
-                backgroundColor: "rgba(15, 23, 42, 0.8)",
-                titleColor: "#e5e7eb",
-                bodyColor: "#9ca3af",
-                borderColor: "rgba(148, 163, 184, 0.25)",
+                backgroundColor: "rgba(6, 13, 31, 0.92)",
+                titleColor: "#e8f4fd",
+                bodyColor: "rgba(130,175,210,0.85)",
+                borderColor: "rgba(79,195,247,0.25)",
                 borderWidth: 1,
-                padding: 10,
-                cornerRadius: 8,
+                padding: 12,
+                cornerRadius: 10,
                 displayColors: true
               }
             },
-            animation: {
-              duration: 1500,
-              easing: "easeInOutQuart"
-            }
+            animation: { duration: 1500, easing: "easeInOutQuart" }
           }
         });
       } catch (error) {
@@ -355,13 +569,16 @@
       }
     }
 
+    /* ═══════════════════════════════════════════════════════════════════
+       API: STATS CHART
+    ═══════════════════════════════════════════════════════════════════ */
     async function loadStatsChart() {
       try {
-        const res = await fetch("/api/weather/stats");
+        const res  = await fetch("/api/weather/stats");
         const data = await res.json();
         if (!data || !data.length) return;
 
-        const labels = data.map(d =>
+        const labels   = data.map(d =>
           new Date(d.calculated_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         );
         const minTemps = data.map(d => Number(d.min_temp));
@@ -369,12 +586,8 @@
         const avgTemps = data.map(d => Number(d.avg_temp));
 
         const ctx = document.getElementById("statsChart").getContext("2d");
-        
-        // Destroy previous chart if it exists
-        if (window.statsChartInstance) {
-          window.statsChartInstance.destroy();
-        }
-        
+        if (window.statsChartInstance) window.statsChartInstance.destroy();
+
         window.statsChartInstance = new Chart(ctx, {
           type: "line",
           data: {
@@ -383,35 +596,35 @@
               {
                 label: "Min",
                 data: minTemps,
-                borderColor: "rgba(148, 163, 184, 1)",
-                backgroundColor: "rgba(148, 163, 184, 0.1)",
+                borderColor: "#64b5f6",
+                backgroundColor: "rgba(100,181,246,0.1)",
                 tension: 0.4,
                 pointRadius: 3,
-                pointHoverRadius: 5,
+                pointHoverRadius: 6,
                 borderWidth: 2,
-                fill: true
+                fill: false
               },
               {
                 label: "Avg",
                 data: avgTemps,
-                borderColor: "rgba(56, 189, 248, 1)",
-                backgroundColor: "rgba(56, 189, 248, 0.1)",
+                borderColor: "#ffa726",
+                backgroundColor: "rgba(255,167,38,0.12)",
                 tension: 0.4,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                borderWidth: 2,
-                fill: true
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                borderWidth: 2.5,
+                fill: false
               },
               {
                 label: "Max",
                 data: maxTemps,
-                borderColor: "rgba(248, 113, 113, 1)",
-                backgroundColor: "rgba(248, 113, 113, 0.1)",
+                borderColor: "#ef5350",
+                backgroundColor: "rgba(239,83,80,0.1)",
                 tension: 0.4,
                 pointRadius: 3,
-                pointHoverRadius: 5,
+                pointHoverRadius: 6,
                 borderWidth: 2,
-                fill: true
+                fill: false
               }
             ]
           },
@@ -420,72 +633,79 @@
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                labels: { color: "#9ca3af", boxWidth: 12, boxHeight: 2 },
+                labels: {
+                  color: "rgba(130,175,210,0.7)",
+                  boxWidth: 10,
+                  boxHeight: 10,
+                  borderRadius: 5,
+                  useBorderRadius: true,
+                  font: { size: 11 },
+                  padding: 16
+                },
                 position: "top"
               },
               tooltip: {
-                backgroundColor: "rgba(15, 23, 42, 0.8)",
-                titleColor: "#e5e7eb",
-                bodyColor: "#9ca3af",
-                borderColor: "rgba(148, 163, 184, 0.25)",
+                backgroundColor: "rgba(6, 13, 31, 0.92)",
+                titleColor: "#e8f4fd",
+                bodyColor: "rgba(130,175,210,0.85)",
+                borderColor: "rgba(79,195,247,0.25)",
                 borderWidth: 1,
-                padding: 10,
-                cornerRadius: 8,
+                padding: 12,
+                cornerRadius: 10,
                 displayColors: true
               }
             },
             scales: {
               x: {
-                ticks: { color: "#9ca3af" },
-                grid: { display: false }
+                ticks: { color: "rgba(130,175,210,0.55)", font: { size: 11 } },
+                grid: { display: false },
+                border: { display: false }
               },
               y: {
-                ticks: { color: "#9ca3af" },
-                grid: { color: "rgba(148, 163, 184, 0.12)" }
+                ticks: { color: "rgba(130,175,210,0.55)", font: { size: 11 } },
+                grid: { color: "rgba(79,195,247,0.07)" },
+                border: { display: false }
               }
             },
-            animation: {
-              duration: 1500,
-              easing: "easeInOutQuart"
-            }
+            animation: { duration: 1500, easing: "easeInOutQuart" }
           }
         });
       } catch (error) {
         console.error("Error loading stats chart:", error);
       }
     }
-    
-    // Function to animate numbers
+
+    /* ═══════════════════════════════════════════════════════════════════
+       NUMBER COUNTER ANIMATION  (unchanged logic)
+    ═══════════════════════════════════════════════════════════════════ */
     function animateValue(id, start, end, duration, decimals) {
       const obj = document.getElementById(id);
       const range = end - start;
       const minTimer = 50;
-      let stepTime = Math.abs(Math.floor(duration / range));
-      stepTime = Math.max(stepTime, minTimer);
+      let stepTime = Math.max(Math.abs(Math.floor(duration / range)), minTimer);
       const startTime = new Date().getTime();
-      const endTime = startTime + duration;
+      const endTime   = startTime + duration;
       let timer;
-      
+
       function run() {
-        const now = new Date().getTime();
+        const now       = new Date().getTime();
         const remaining = Math.max((endTime - now) / duration, 0);
-        const value = Math.round(end - (remaining * range));
-        obj.innerHTML = value.toFixed(decimals);
-        if (value == end) {
-          clearInterval(timer);
-        }
+        const value     = Math.round(end - (remaining * range));
+        obj.innerHTML   = value.toFixed(decimals);
+        if (value == end) clearInterval(timer);
       }
-      
+
       timer = setInterval(run, stepTime);
       run();
     }
 
-    // Initial load
+    /* ═══════════════════════════════════════════════════════════════════
+       INITIAL LOAD + AUTO-REFRESH
+    ═══════════════════════════════════════════════════════════════════ */
     loadLatest();
     loadHistoryChart();
     loadStatsChart();
-    
-    // Auto-refresh every 5 minutes
+
     setInterval(() => {
       loadLatest();
       loadHistoryChart();
